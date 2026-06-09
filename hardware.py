@@ -36,9 +36,31 @@ class DoorHardware:
 
     # ----- servo -----
     def _set_angle(self, angle):
-        self.servo.angle = angle
-        time.sleep(0.6)          # give the servo time to travel
-        self.servo.detach()      # stop sending PWM -> stops jitter & saves power
+        # Smooth, slow movement: step in tiny increments with a short pause.
+        current = self.servo.angle
+        if current is None:
+            current = angle
+        current = float(current)
+        angle = float(angle)
+
+        STEP = 1.0          # degrees per step (smaller = smoother)
+        DELAY = 0.04        # pause per step in seconds (bigger = slower)
+
+        if angle > current:
+            a = current
+            while a < angle:
+                a = min(a + STEP, angle)
+                self.servo.angle = a
+                time.sleep(DELAY)
+        else:
+            a = current
+            while a > angle:
+                a = max(a - STEP, angle)
+                self.servo.angle = a
+                time.sleep(DELAY)
+
+        time.sleep(0.3)      # settle at the target
+        self.servo.detach()  # cut PWM -> stops jitter & saves power  # stop sending PWM -> stops jitter & saves power
 
     def open_door(self, auto_relock=True):
         with self._lock:

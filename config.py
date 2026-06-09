@@ -10,8 +10,8 @@ BUZZER_PIN = 17         # Buzzer +          -> GPIO 17 (physical pin 11)
 
 # ---------- SERVO ANGLES ----------
 # Tune these to match how your latch is mounted.
-SERVO_LOCKED_ANGLE = 0      # position when door is locked
-SERVO_OPEN_ANGLE = 90       # position that pulls the bolt open
+SERVO_LOCKED_ANGLE = 125      # position when door is locked
+SERVO_OPEN_ANGLE =0       # position that pulls the bolt open
 RELOCK_DELAY_SECONDS = 5    # auto re-lock after this many seconds
 
 # ---------- FACE RECOGNITION ----------
@@ -33,7 +33,7 @@ WEB_HOST = "0.0.0.0"
 WEB_PORT = 5000
 # Login credentials for the dashboard. CHANGE THESE.
 ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "changeme")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "1234")
 SECRET_KEY = os.environ.get("SECRET_KEY", "please-change-this-secret-key")
 
 # ---------- EMAIL (Gmail example) ----------
