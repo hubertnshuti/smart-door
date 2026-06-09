@@ -167,3 +167,4 @@ Faces of the same person produce vectors pointing in almost the same direction.
 We measure that with **cosine similarity** (1.0 = identical direction). If the best
 match against your registered members scores above `MATCH_THRESHOLD`, it's that
 person; otherwise it's treated as unknown.
+#smart-door

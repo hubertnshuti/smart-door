@@ -1,0 +1,12 @@
+# Smart Door — Python dependencies
+# Install inside a virtualenv created with --system-site-packages
+# (so Picamera2, which is a system package, stays available).
+
+flask
+insightface
+onnxruntime
+opencv-python-headless
+numpy
+gpiozero
+pigpio
+requests

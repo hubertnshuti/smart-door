@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Door — Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <nav class="topbar">
+    <span class="brand">Smart Door</span>
+    <div class="nav-links">
+      <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
+      <a href="{{ url_for('register') }}">Members</a>
+      <a href="{{ url_for('logout') }}">Logout</a>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="grid">
+      <div class="card">
+        <h2>Live camera</h2>
+        <img class="stream" src="{{ url_for('video') }}" alt="Live feed">
+      </div>
+
+      <div class="card">
+        <h2>Door control</h2>
+        <div class="status-row">
+          <span>Status</span>
+          <span id="door-status" class="badge">{{ state.door }}</span>
+        </div>
+        <div class="status-row">
+          <span>Last person</span>
+          <span id="last-person">{{ state.last_person }}</span>
+        </div>
+        <div class="status-row">
+          <span>Last event</span>
+          <span id="last-status">{{ state.last_status }}</span>
+        </div>
+        <div class="status-row">
+          <span>Time</span>
+          <span id="last-time">{{ state.last_time }}</span>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="action('open')">Open door</button>
+          <button class="btn btn-dark" onclick="action('lock')">Lock door</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Activity log</h2>
+      <table>
+        <thead>
+          <tr><th>Time</th><th>Person</th><th>Status</th><th>Action</th></tr>
+        </thead>
+        <tbody id="log-body">
+          {% for log in logs %}
+          <tr>
+            <td>{{ log.timestamp }}</td>
+            <td>{{ log.person }}</td>
+            <td><span class="tag {{ 'tag-ok' if log.status == 'Authorized' else ('tag-bad' if log.status == 'Unauthorized' else 'tag-neutral') }}">{{ log.status }}</span></td>
+            <td>{{ log.action }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    function action(kind) {
+      fetch('/' + kind, { method: 'POST' })
+        .then(r => r.json())
+        .then(() => refresh());
+    }
+    function refresh() {
+      fetch('/status').then(r => r.json()).then(s => {
+        document.getElementById('door-status').textContent = s.door;
+        document.getElementById('last-person').textContent = s.last_person;
+        document.getElementById('last-status').textContent = s.last_status;
+        document.getElementById('last-time').textContent = s.last_time;
+      });
+    }
+    setInterval(refresh, 3000);
+  </script>
+</body>
+</html>
