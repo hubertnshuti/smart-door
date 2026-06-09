@@ -1,10 +1,9 @@
 """
 Hardware control: MG995 servo (door latch) and buzzer (alarm).
 
-We use gpiozero with the pigpio pin factory because pigpio produces a stable,
-hardware-timed PWM signal. Software PWM makes the MG995 jitter badly.
-
-IMPORTANT: run the pigpio daemon first:  sudo systemctl enable --now pigpiod
+Uses gpiozero with the lgpio pin factory (no daemon needed).
+The servo moves in small steps for slow, smooth motion, then detaches
+after each move to stop software-PWM jitter and save power.
 """
 import threading
 import time
@@ -35,32 +34,47 @@ class DoorHardware:
         self.lock_door()  # start in a known (locked) state
 
     # ----- servo -----
+    @staticmethod
+    def _clamp(value):
+        # Keep the angle safely inside 0-180 to avoid rounding errors.
+        return max(0.0, min(180.0, float(value)))
+
     def _set_angle(self, angle):
-        # Smooth, slow movement: step in tiny increments with a short pause.
+        # Slow movement that the servo actually obeys.
+        # The MG995 moves at its own fast speed between targets, so to make
+        # motion look slow we send LARGER steps and wait long enough for the
+        # servo to physically reach each one before sending the next.
+        #
+        #   STEP  = degrees per step  (bigger  = each move is more visible)
+        #   DELAY = pause per step    (must be long enough to arrive)
+        STEP = 5.0
+        DELAY = 0.15
+
+        angle = self._clamp(angle)
         current = self.servo.angle
         if current is None:
-            current = angle
+            # Position unknown (startup): snap directly to target once.
+            self.servo.angle = angle
+            time.sleep(0.5)
+            self.servo.detach()
+            return
+
         current = float(current)
-        angle = float(angle)
-
-        STEP = 1.0          # degrees per step (smaller = smoother)
-        DELAY = 0.04        # pause per step in seconds (bigger = slower)
-
         if angle > current:
             a = current
             while a < angle:
                 a = min(a + STEP, angle)
-                self.servo.angle = a
+                self.servo.angle = self._clamp(a)
                 time.sleep(DELAY)
         else:
             a = current
             while a > angle:
                 a = max(a - STEP, angle)
-                self.servo.angle = a
+                self.servo.angle = self._clamp(a)
                 time.sleep(DELAY)
 
-        time.sleep(0.3)      # settle at the target
-        self.servo.detach()  # cut PWM -> stops jitter & saves power  # stop sending PWM -> stops jitter & saves power
+        time.sleep(0.3)
+        self.servo.detach()
 
     def open_door(self, auto_relock=True):
         with self._lock:
