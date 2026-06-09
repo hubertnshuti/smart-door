@@ -59,6 +59,24 @@ def _send_telegram(text, image_path=None):
     except Exception as e:
         print(f"[notifier] telegram failed: {e}")
 
+def _send_sms(text):
+    if not config.SMS_ENABLED:
+        return
+    try:
+        requests.post(
+            f"https://{config.INFOBIP_BASE_URL}/sms/2/text/advanced",
+            headers={"Authorization": f"App {config.INFOBIP_API_KEY}",
+                     "Content-Type": "application/json"},
+            json={"messages": [{
+                "from": config.SMS_SENDER,
+                "destinations": [{"to": config.SMS_TO}],
+                "text": text,
+            }]},
+            timeout=15,
+        )
+    except Exception as e:
+        print(f"[notifier] sms failed: {e}")
+
 
 def notify_unknown(image_path=None):
     """Fire-and-forget alert about an unknown visitor."""
@@ -71,3 +89,6 @@ def notify_unknown(image_path=None):
     threading.Thread(
         target=_send_telegram, args=(body, image_path), daemon=True
     ).start()
+    threading.Thread(target=_send_sms, args=(body,), daemon=True
+    ).start()
+   
