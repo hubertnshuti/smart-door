@@ -10,11 +10,11 @@ import threading
 import time
 
 from gpiozero import AngularServo, Buzzer
-from gpiozero.pins.pigpio import PiGPIOFactory
+from gpiozero.pins.lgpio import LGPIOFactory
 
 import config
 
-_factory = PiGPIOFactory()
+_factory = LGPIOFactory()
 
 
 class DoorHardware:
