@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% set active_page = "students" %}
+
+{% block title %}Students — Lab Access Control{% endblock %}
+{% block page_title %}Students{% endblock %}
+{% block page_subtitle %}Manage registered students &amp; face enrollment{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('students_register') }}" class="btn btn-primary btn-sm">
+    <i data-lucide="user-plus"></i> Register Student
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i data-lucide="graduation-cap"></i>
+      All Students
+      <span class="badge badge-neutral" style="margin-left:.3rem">{{ students|length }}</span>
+    </span>
+    <form method="GET" action="{{ url_for('students') }}" style="display:flex;gap:.6rem;align-items:center">
+      <div class="search-wrap">
+        <i data-lucide="search"></i>
+        <input class="form-control search-input" name="q" value="{{ search }}"
+               placeholder="Search by name or reg…" style="width:220px">
+      </div>
+      <button type="submit" class="btn btn-ghost btn-sm">Search</button>
+      {% if search %}
+        <a href="{{ url_for('students') }}" class="btn btn-ghost btn-sm">Clear</a>
+      {% endif %}
+    </form>
+  </div>
+
+  {% if students %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:52px">Photo</th>
+          <th>Reg Number</th>
+          <th>Name</th>
+          <th>Program</th>
+          <th>Face</th>
+          <th>Enrolled</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in students %}
+        <tr>
+          <td>
+            {% if s.photo %}
+              <img class="photo-thumb"
+                   src="{{ url_for('serve_student_photo', filename=s.photo) }}"
+                   alt="{{ s.name }}">
+            {% else %}
+              <div class="photo-placeholder">{{ s.name[0]|upper }}</div>
+            {% endif %}
+          </td>
+          <td>
+            <span style="font-family:monospace;font-size:.82rem;color:var(--text-2)">{{ s.reg_number }}</span>
+          </td>
+          <td><strong>{{ s.name }}</strong></td>
+          <td class="td-muted">{{ s.program or '—' }}</td>
+          <td>
+            {% if s.photo %}
+              <span class="badge badge-green"><i data-lucide="check" style="width:10px;height:10px"></i> Enrolled</span>
+            {% else %}
+              <span class="badge badge-neutral">No face</span>
+            {% endif %}
+          </td>
+          <td class="td-muted">{{ s.created[:10] if s.created else '—' }}</td>
+          <td>
+            <div style="display:flex;gap:.4rem;align-items:center">
+              <a href="{{ url_for('edit_student', sid=s.id) }}"
+                 class="btn btn-ghost btn-sm" title="Edit student">
+                <i data-lucide="pencil"></i>
+              </a>
+              <form method="POST" action="{{ url_for('delete_student', sid=s.id) }}"
+                    onsubmit="return confirm('Remove {{ s.name }}?')">
+                <button type="submit" class="btn-danger" title="Delete">
+                  <i data-lucide="trash-2"></i>
+                </button>
+              </form>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i data-lucide="graduation-cap"></i>
+    <p>No students found{% if search %} matching "{{ search }}"{% endif %}.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

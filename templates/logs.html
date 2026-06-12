@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% set active_page = "logs" %}
+
+{% block title %}Logs &amp; Reports — Lab Access Control{% endblock %}
+{% block page_title %}Logs &amp; Reports{% endblock %}
+{% block page_subtitle %}Access history, audit trail, and exportable reports{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('logs_export') }}?date_from={{ date_from }}&date_to={{ date_to }}&person_type={{ person_type }}&status={{ status }}&search={{ search }}"
+     class="btn btn-ghost btn-sm">
+    <i data-lucide="download"></i> Export CSV
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Filter bar -->
+<form method="GET" action="{{ url_for('logs') }}">
+  <div class="filter-bar">
+    <div class="form-group">
+      <label class="form-label">From</label>
+      <input class="form-control" type="date" name="date_from" value="{{ date_from }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">To</label>
+      <input class="form-control" type="date" name="date_to" value="{{ date_to }}">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Type</label>
+      <select class="form-control" name="person_type" style="width:130px">
+        <option value="">All types</option>
+        <option value="student" {% if person_type == 'student' %}selected{% endif %}>Student</option>
+        <option value="staff"   {% if person_type == 'staff'   %}selected{% endif %}>Staff</option>
+        <option value="unknown" {% if person_type == 'unknown' %}selected{% endif %}>Unknown</option>
+        <option value="admin"   {% if person_type == 'admin'   %}selected{% endif %}>Admin</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-control" name="status" style="width:130px">
+        <option value="">All statuses</option>
+        <option value="Granted" {% if status == 'Granted' %}selected{% endif %}>Granted</option>
+        <option value="Denied"  {% if status == 'Denied'  %}selected{% endif %}>Denied</option>
+        <option value="Manual"  {% if status == 'Manual'  %}selected{% endif %}>Manual</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Search</label>
+      <div class="search-wrap">
+        <i data-lucide="search"></i>
+        <input class="form-control search-input" name="search" value="{{ search }}"
+               placeholder="Name or reg…" style="width:180px">
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Apply</button>
+    <a href="{{ url_for('logs') }}" class="btn btn-ghost btn-sm">Reset</a>
+  </div>
+</form>
+
+<!-- Quick preset links -->
+<div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap">
+  <a href="{{ url_for('logs') }}?preset=today"
+     class="btn btn-sm {% if preset == 'today' %}btn-primary{% else %}btn-ghost{% endif %}">Today</a>
+  <a href="{{ url_for('logs') }}?preset=week&date_from={{ week_start }}&date_to={{ today }}"
+     class="btn btn-sm {% if preset == 'week' %}btn-primary{% else %}btn-ghost{% endif %}">Last 7 days</a>
+</div>
+
+<!-- Summary chips -->
+<div class="summary-chips">
+  <div class="summary-chip">
+    <div class="summary-chip-label">Total Events</div>
+    <div class="summary-chip-value">{{ summary.total or 0 }}</div>
+  </div>
+  <div class="summary-chip">
+    <div class="summary-chip-label" style="color:var(--green)">Granted</div>
+    <div class="summary-chip-value" style="color:var(--green)">{{ summary.granted or 0 }}</div>
+  </div>
+  <div class="summary-chip">
+    <div class="summary-chip-label" style="color:var(--red)">Denied</div>
+    <div class="summary-chip-value" style="color:var(--red)">{{ summary.denied or 0 }}</div>
+  </div>
+  <div class="summary-chip">
+    <div class="summary-chip-label">Unique Students</div>
+    <div class="summary-chip-value">{{ summary.unique_students or 0 }}</div>
+  </div>
+</div>
+
+<!-- Log table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i data-lucide="file-text"></i>
+      Access Log
+      <span class="badge badge-neutral" style="margin-left:.3rem">{{ logs|length }} shown</span>
+    </span>
+    <span style="font-size:.75rem;color:var(--text-3)">{{ date_from }} → {{ date_to }}</span>
+  </div>
+
+  {% if logs %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Person</th>
+          <th>Reg Number</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Action</th>
+          <th>Snapshot</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td class="td-muted" style="white-space:nowrap;font-size:.78rem">{{ log.timestamp }}</td>
+          <td><strong style="font-size:.85rem">{{ log.person_name }}</strong></td>
+          <td>
+            {% if log.reg_number %}
+              <span style="font-family:monospace;font-size:.78rem;color:var(--text-2)">{{ log.reg_number }}</span>
+            {% else %}
+              <span class="td-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.person_type == 'student' %}
+              <span class="badge badge-blue">Student</span>
+            {% elif log.person_type == 'staff' %}
+              <span class="badge badge-amber">Staff</span>
+            {% elif log.person_type == 'admin' %}
+              <span class="badge badge-accent">Admin</span>
+            {% else %}
+              <span class="badge badge-neutral">{{ log.person_type or '—' }}</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if log.status == 'Granted' %}
+              <span class="badge badge-green">Granted</span>
+            {% elif log.status == 'Denied' %}
+              <span class="badge badge-red">Denied</span>
+            {% elif log.status == 'Manual' %}
+              <span class="badge badge-accent">Manual</span>
+            {% else %}
+              <span class="badge badge-neutral">{{ log.status }}</span>
+            {% endif %}
+          </td>
+          <td style="font-size:.8rem;color:var(--text-2);max-width:240px">{{ log.action }}</td>
+          <td>
+            {% if log.snapshot %}
+              <a href="{{ url_for('serve_snapshot', filename=log.snapshot) }}"
+                 target="_blank" class="btn btn-ghost btn-sm" style="padding:.3rem .55rem">
+                <i data-lucide="image"></i>
+              </a>
+            {% else %}
+              <span class="td-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i data-lucide="file-text"></i>
+    <p>No log entries match your filters.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+

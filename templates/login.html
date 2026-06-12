@@ -3,25 +3,90 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Door — Login</title>
+  <title>Admin Login — Lab Access Control</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c6af7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3Ccircle cx='12' cy='16' r='1'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script>(function(){ var t=localStorage.getItem('theme'); if(t==='dark') document.documentElement.setAttribute('data-theme','dark'); else document.documentElement.setAttribute('data-theme','light'); })();</script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 </head>
 <body>
-  <div class="login-wrap">
-    <div class="card login-card">
-      <h1>Smart Door</h1>
-      <p class="subtitle">Sign in to your dashboard</p>
-      {% with messages = get_flashed_messages() %}
-        {% if messages %}<div class="flash">{{ messages[0] }}</div>{% endif %}
-      {% endwith %}
-      <form method="POST">
-        <label>Username</label>
-        <input type="text" name="username" required autofocus>
-        <label>Password</label>
-        <input type="password" name="password" required>
-        <button type="submit" class="btn btn-primary">Sign in</button>
-      </form>
+<div class="login-page">
+  <div class="login-bg"></div>
+  <button class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"
+          style="position:fixed;top:1rem;right:1rem;z-index:200">
+    <i data-lucide="sun"  id="icon-sun"></i>
+    <i data-lucide="moon" id="icon-moon" style="display:none"></i>
+  </button>
+  <div class="login-card">
+
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          <circle cx="12" cy="16" r="1"/>
+        </svg>
+      </div>
+      <div class="login-title">Admin Portal</div>
+      <div class="login-sub">Lab Access Control System</div>
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+      <div class="flash-wrap">
+        {% for category, msg in messages %}
+        <div class="flash flash-{{ category if category in ['success','error','warning'] else 'info' }}">
+          <i data-lucide="{{ 'check-circle' if category == 'success' else 'alert-circle' if category == 'error' else 'info' }}"></i>
+          {{ msg }}
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+    {% endwith %}
+
+    <form method="POST" action="{{ url_for('admin_login') }}" autocomplete="on">
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-control" type="text" name="username"
+               placeholder="Admin username" required autofocus>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-control" type="password" name="password"
+               placeholder="Password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem">
+        <i data-lucide="log-in"></i> Sign In
+      </button>
+    </form>
+
+    <div class="login-footer">
+      Back to portal chooser?
+      <a href="{{ url_for('index') }}">Home</a>
+    </div>
+
+    <hr class="divider" style="margin-top:1.5rem">
+    <div style="text-align:center;font-size:.78rem;color:var(--text-3)">
+      Are you a student?
+      <a href="{{ url_for('student_login') }}" style="color:var(--accent);font-weight:600">Student portal</a>
     </div>
   </div>
+</div>
+<script>
+  function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.getAttribute('data-theme') === 'dark';
+    if (isDark) { html.setAttribute('data-theme','light'); localStorage.setItem('theme','light'); }
+    else { html.setAttribute('data-theme','dark'); localStorage.setItem('theme','dark'); }
+    updateThemeIcon(); lucide.createIcons();
+  }
+  function updateThemeIcon() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.getElementById('icon-sun').style.display  = isDark ? 'flex' : 'none';
+    document.getElementById('icon-moon').style.display = isDark ? 'none' : 'flex';
+  }
+  document.addEventListener('DOMContentLoaded', function() { lucide.createIcons(); updateThemeIcon(); });
+</script>
 </body>
 </html>

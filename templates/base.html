@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Lab Access Control{% endblock %}</title>
+  <!-- Favicon: inline SVG lock -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%237c6af7' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='11' width='18' height='11' rx='2'/%3E%3Cpath d='M7 11V7a5 5 0 0 1 10 0v4'/%3E%3Ccircle cx='12' cy='16' r='1'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <!-- Anti-FOUC: default light; apply dark only when explicitly saved -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('theme');
+      if (t === 'dark') document.documentElement.setAttribute('data-theme','dark');
+      else document.documentElement.setAttribute('data-theme','light');
+    })();
+  </script>
+  <!-- Alpine.js -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <!-- Socket.IO -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <!-- Lucide icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-logo">
+        <div class="brand-icon">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            <circle cx="12" cy="16" r="1"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">LabAccess</div>
+        </div>
+      </div>
+      <div class="brand-sub">Access Control System</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Main</div>
+
+      <a href="{{ url_for('dashboard') }}"
+         class="nav-item {% if active_page == 'dashboard' %}active{% endif %}">
+        <i data-lucide="layout-dashboard"></i>
+        Dashboard
+      </a>
+
+      <div class="nav-section-label">People</div>
+
+      <a href="{{ url_for('students') }}"
+         class="nav-item {% if active_page == 'students' %}active{% endif %}">
+        <i data-lucide="graduation-cap"></i>
+        Students
+      </a>
+
+      <a href="{{ url_for('roster_list') }}"
+         class="nav-item {% if active_page == 'roster' %}active{% endif %}">
+        <i data-lucide="list-checks"></i>
+        Roster
+      </a>
+
+      <a href="{{ url_for('staff') }}"
+         class="nav-item {% if active_page == 'staff' %}active{% endif %}">
+        <i data-lucide="shield-check"></i>
+        Staff
+      </a>
+
+      <div class="nav-section-label">Access</div>
+
+      <a href="{{ url_for('grants') }}"
+         class="nav-item {% if active_page == 'grants' %}active{% endif %}">
+        <i data-lucide="key-round"></i>
+        Access Grants
+      </a>
+
+      <a href="{{ url_for('requests_queue') }}"
+         class="nav-item {% if active_page == 'requests' %}active{% endif %}">
+        <i data-lucide="inbox"></i>
+        Requests
+        {% if pending_requests_count and pending_requests_count > 0 %}
+        <span class="nav-badge">{{ pending_requests_count }}</span>
+        {% endif %}
+      </a>
+
+      <a href="{{ url_for('logs') }}"
+         class="nav-item {% if active_page == 'logs' %}active{% endif %}">
+        <i data-lucide="file-text"></i>
+        Logs &amp; Reports
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">{{ session.username[0]|upper if session.username else 'A' }}</div>
+        <div>
+          <div class="user-name">{{ session.username or 'Admin' }}</div>
+          <div class="user-role">Administrator</div>
+        </div>
+        <a href="{{ url_for('logout') }}" class="logout-btn" title="Logout">
+          <i data-lucide="log-out"></i>
+        </a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ── Main content ── -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title">{% block page_title %}{% endblock %}</div>
+        <div class="page-subtitle">{% block page_subtitle %}{% endblock %}</div>
+      </div>
+      <div class="topbar-right">
+        {% block topbar_right %}{% endblock %}
+        <button class="theme-toggle" id="themeToggle" title="Toggle theme" onclick="toggleTheme()">
+          <i data-lucide="sun"  id="icon-sun"></i>
+          <i data-lucide="moon" id="icon-moon" style="display:none"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="flash-wrap">
+          {% for category, msg in messages %}
+          <div class="flash flash-{{ category if category in ['success','error','warning'] else 'info' }}">
+            <i data-lucide="{{ 'check-circle' if category == 'success' else 'alert-circle' if category == 'error' else 'info' }}"></i>
+            {{ msg }}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+      {% endwith %}
+
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+
+<script>
+  function toggleTheme() {
+    var html = document.documentElement;
+    var isDark = html.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+      html.setAttribute('data-theme', 'light');
+      localStorage.setItem('theme', 'light');
+    } else {
+      html.setAttribute('data-theme', 'dark');
+      localStorage.setItem('theme', 'dark');
+    }
+    updateThemeIcon();
+    lucide.createIcons();
+  }
+
+  function updateThemeIcon() {
+    var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    var sun  = document.getElementById('icon-sun');
+    var moon = document.getElementById('icon-moon');
+    if (sun)  sun.style.display  = isDark ? 'flex' : 'none';
+    if (moon) moon.style.display = isDark ? 'none' : 'flex';
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    lucide.createIcons();
+    updateThemeIcon();
+  });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

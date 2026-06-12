@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% set active_page = "staff" %}
+
+{% block title %}Staff — Lab Access Control{% endblock %}
+{% block page_title %}Staff{% endblock %}
+{% block page_subtitle %}Lab administrators and responsible staff — always have access{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('staff_register') }}" class="btn btn-primary btn-sm">
+    <i data-lucide="user-plus"></i> Add Staff
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i data-lucide="shield-check"></i>
+      Staff Members
+      <span class="badge badge-neutral" style="margin-left:.3rem">{{ staff|length }}</span>
+    </span>
+    <span class="badge badge-green" style="font-size:.72rem">
+      <i data-lucide="infinity" style="width:11px;height:11px"></i>&nbsp;
+      Permanent access — no grants needed
+    </span>
+  </div>
+
+  {% if staff %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:52px">Photo</th>
+          <th>Name</th>
+          <th>Role</th>
+          <th>Face</th>
+          <th>Added</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in staff %}
+        <tr>
+          <td>
+            {% if s.photo %}
+              <img class="photo-thumb"
+                   src="{{ url_for('serve_staff_photo', filename=s.photo) }}"
+                   alt="{{ s.name }}">
+            {% else %}
+              <div class="photo-placeholder">{{ s.name[0]|upper }}</div>
+            {% endif %}
+          </td>
+          <td><strong>{{ s.name }}</strong></td>
+          <td>
+            <span class="badge badge-amber">{{ s.role or '—' }}</span>
+          </td>
+          <td>
+            {% if s.photo %}
+              <span class="badge badge-green">
+                <i data-lucide="check" style="width:10px;height:10px"></i> Enrolled
+              </span>
+            {% else %}
+              <span class="badge badge-neutral">No face</span>
+            {% endif %}
+          </td>
+          <td class="td-muted">{{ s.created[:10] if s.created else '—' }}</td>
+          <td>
+            <form method="POST" action="{{ url_for('delete_staff', sid=s.id) }}"
+                  onsubmit="return confirm('Remove {{ s.name }}?')">
+              <button type="submit" class="btn-danger" title="Delete">
+                <i data-lucide="trash-2"></i> Remove
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i data-lucide="shield-check"></i>
+    <p>No staff members yet. Add the first one using the button above.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

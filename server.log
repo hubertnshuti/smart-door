@@ -1,0 +1,14 @@
+[init] starting camera...
+[camera] -> MockCamera (OpenCV webcam)
+[init] loading face model (first run may take a minute)...
+Applied providers: ['CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}}
+find model: C:\Users\user/.insightface\models\buffalo_sc\det_500m.onnx detection [1, 3, '?', '?'] 127.5 128.0
+Applied providers: ['CPUExecutionProvider'], with options: {'CPUExecutionProvider': {}}
+find model: C:\Users\user/.insightface\models\buffalo_sc\w600k_mbf.onnx recognition ['None', 3, 112, 112] 127.5 127.5
+set det-size: (320, 320)
+[init] initializing hardware...
+[hardware] MockDoorHardware (no GPIO)
+[init] ready.
+
+ * Serving Flask app 'app'
+ * Debug mode: off

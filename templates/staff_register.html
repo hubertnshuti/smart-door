@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% set active_page = "staff" %}
+
+{% block title %}Add Staff — Lab Access Control{% endblock %}
+{% block page_title %}Add Staff Member{% endblock %}
+{% block page_subtitle %}Register a staff member with permanent lab access{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('staff') }}" class="btn btn-ghost btn-sm">
+    <i data-lucide="arrow-left"></i> Back to Staff
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="register-grid">
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i data-lucide="shield-check"></i> Staff Details</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('staff_register') }}"
+          x-data="{ captureMode: false }">
+      <div class="form-group">
+        <label class="form-label">Full Name <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="text" name="name"
+               placeholder="e.g. Dr. John Doe" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Role <span style="color:var(--red)">*</span></label>
+        <select class="form-control" name="role" required>
+          <option value="">— Select role —</option>
+          <option value="Lab Administrator">Lab Administrator</option>
+          <option value="Lab Technician">Lab Technician</option>
+          <option value="Lecturer">Lecturer</option>
+          <option value="Security">Security</option>
+          <option value="IT Support">IT Support</option>
+        </select>
+      </div>
+
+      <hr class="divider">
+
+      <div style="margin-bottom:1rem">
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-2);margin-bottom:.6rem">Face Enrollment</div>
+        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--text-2)">
+          <input type="checkbox" name="capture_face" value="1"
+                 @change="captureMode = $event.target.checked"
+                 style="width:auto;accent-color:var(--accent)">
+          Capture face from camera right now
+        </label>
+        <div class="form-hint">Staff without a face enrolled won't be recognized automatically.</div>
+      </div>
+
+      <div x-show="captureMode" x-transition style="margin-bottom:1rem">
+        <div class="badge badge-amber" style="display:inline-flex">
+          <i data-lucide="alert-triangle" style="width:12px;height:12px"></i>
+          &nbsp;Staff member should be looking at the camera before submitting
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        <i data-lucide="user-plus"></i>
+        <span x-text="captureMode ? 'Capture &amp; Register' : 'Add Staff Member'">Add Staff Member</span>
+      </button>
+    </form>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+    <div class="card" style="padding:1.1rem">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="video"></i> Camera Preview</span>
+        <span class="badge badge-red" style="display:flex;align-items:center;gap:.3rem">
+          <span class="live-dot"></span> LIVE
+        </span>
+      </div>
+      <div class="camera-wrap">
+        <img class="camera-feed" src="{{ url_for('video') }}" alt="Live camera">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="list"></i> Current Staff</span>
+        <span class="badge badge-neutral">{{ staff|length }}</span>
+      </div>
+      {% if staff %}
+      <div class="table-wrap" style="max-height:280px;overflow-y:auto">
+        <table>
+          <thead><tr><th>Name</th><th>Role</th><th>Face</th></tr></thead>
+          <tbody>
+            {% for s in staff %}
+            <tr>
+              <td style="font-size:.85rem"><strong>{{ s.name }}</strong></td>
+              <td><span class="badge badge-amber" style="font-size:.7rem">{{ s.role }}</span></td>
+              <td>
+                {% if s.photo %}
+                  <span class="badge badge-green" style="font-size:.68rem">
+                    <i data-lucide="check" style="width:9px;height:9px"></i> Yes
+                  </span>
+                {% else %}
+                  <span class="badge badge-neutral" style="font-size:.68rem">No</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:1.5rem">
+        <p>No staff members registered yet.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{% extends "student_base.html" %}
+{% set active_page = "request" %}
+
+{% block title %}Request Lab Access — Lab Access Control{% endblock %}
+
+{% block content %}
+<div style="margin-bottom:1.5rem">
+  <h2 style="font-size:1.2rem;font-weight:700;color:var(--text-1)">Request Lab Access</h2>
+  <p style="font-size:.85rem;color:var(--text-3);margin-top:.3rem">
+    Upload your student card for identity verification. An admin will review your request.
+  </p>
+</div>
+
+<div class="card" x-data="requestForm()">
+  <form method="POST" action="{{ url_for('student_request_form') }}"
+        enctype="multipart/form-data">
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Desired Start Time</label>
+        <input class="form-control" type="datetime-local" name="desired_start"
+               value="{{ default_start }}" required>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Duration</label>
+        <div class="duration-pills" style="margin-bottom:.7rem">
+          {% for p in presets %}
+          <button type="button" class="duration-pill"
+                  @click="duration = {{ p }}"
+                  :class="{ selected: duration == {{ p }} }">
+            {{ p }}m
+          </button>
+          {% endfor %}
+        </div>
+        <input class="form-control" type="number" name="duration"
+               x-model="duration" min="15" max="480" required placeholder="Minutes">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Reason / Note <span style="color:var(--text-3);font-weight:400">(optional)</span></label>
+      <textarea class="form-control" name="note" rows="3"
+                placeholder="e.g. Database systems assignment, studying for exam…"></textarea>
+    </div>
+
+    <!-- Student card upload (required) -->
+    <div class="form-group">
+      <label class="form-label">
+        Student Card Photo <span style="color:var(--red)">*</span>
+      </label>
+      <div class="file-upload-wrap" @click.stop>
+        <input type="file" name="card_image" accept="image/*"
+               @change="cardName = $event.target.files[0]?.name || ''" required>
+        <div class="file-upload-icon"><i data-lucide="id-card"></i></div>
+        <div class="file-upload-label" x-text="cardName || 'Click to upload student card'"></div>
+        <div class="file-upload-hint">JPG, PNG — max 5 MB. Used for identity verification.</div>
+      </div>
+    </div>
+
+    <!-- Recommendation letter upload (optional) -->
+    <div class="form-group">
+      <label class="form-label">
+        Recommendation Letter <span style="color:var(--text-3);font-weight:400">(optional)</span>
+      </label>
+      <div class="file-upload-wrap" @click.stop>
+        <input type="file" name="reco_file" accept="image/*,.pdf"
+               @change="recoName = $event.target.files[0]?.name || ''">
+        <div class="file-upload-icon"><i data-lucide="file-text"></i></div>
+        <div class="file-upload-label" x-text="recoName || 'Click to upload letter (PDF or image)'"></div>
+        <div class="file-upload-hint">From a supervisor or lecturer.</div>
+      </div>
+    </div>
+
+    <div class="info-box" style="margin-bottom:1.2rem">
+      <i data-lucide="info"></i>
+      Your card image is only visible to admins for verification. It will not be shared.
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-full">
+      <i data-lucide="send"></i> Submit Request
+    </button>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function requestForm() {
+    return { duration: 60, cardName: '', recoName: '' };
+  }
+</script>
+{% endblock %}

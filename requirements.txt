@@ -1,12 +1,35 @@
-# Smart Door — Python dependencies
-# Install inside a virtualenv created with --system-site-packages
-# (so Picamera2, which is a system package, stays available).
+# Lab Access Control — Python dependencies
+#
+# Cross-platform subset (Windows + Pi):
+#   pip install flask flask-socketio eventlet insightface onnxruntime opencv-python numpy requests werkzeug
+#
+# Pi-only (skip on Windows — the app gracefully falls back to Mock implementations):
+#   pip install gpiozero lgpio picamera2
+#
+# Full install on Pi:
+#   pip install -r requirements.txt
+#
+# Minimal install on Windows dev machine (omit Pi-only lines):
+#   pip install flask flask-socketio eventlet insightface onnxruntime opencv-python numpy requests werkzeug
 
+# ── Web framework ─────────────────────────────────────────────
 flask
+flask-socketio
+eventlet
+
+# ── Face recognition ──────────────────────────────────────────
 insightface
 onnxruntime
-opencv-python-headless
+opencv-python
 numpy
-gpiozero
-pigpio
+
+# ── HTTP / notifications ──────────────────────────────────────
 requests
+
+# ── Password hashing ──────────────────────────────────────────
+werkzeug
+
+# ── Pi-only hardware (may fail on Windows — safe to skip) ─────
+# gpiozero
+# lgpio
+# picamera2

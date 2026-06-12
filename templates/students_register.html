@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% set active_page = "students" %}
+
+{% block title %}Register Student — Lab Access Control{% endblock %}
+{% block page_title %}Register Student{% endblock %}
+{% block page_subtitle %}Add a new student or enroll their face{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('students') }}" class="btn btn-ghost btn-sm">
+    <i data-lucide="arrow-left"></i> Back to Students
+  </a>
+{% endblock %}
+
+{% block content %}
+<div class="register-grid">
+
+  <!-- Form -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i data-lucide="user-plus"></i> Student Details</span>
+    </div>
+
+    <form method="POST" action="{{ url_for('students_register') }}"
+          x-data="{ captureMode: false }">
+      <div class="form-group">
+        <label class="form-label">Registration Number <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="text" name="reg_number"
+               placeholder="e.g. STU/2024/001" required>
+        <div class="form-hint">Must be unique. If the student already exists, face will be updated.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Full Name <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="text" name="name"
+               placeholder="e.g. Alice Uwimana" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Program / Department</label>
+        <input class="form-control" type="text" name="program"
+               placeholder="e.g. Computer Science">
+      </div>
+
+      <hr class="divider">
+
+      <div style="margin-bottom:1rem">
+        <div style="font-size:.82rem;font-weight:600;color:var(--text-2);margin-bottom:.6rem">Face Enrollment</div>
+        <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer;font-size:.85rem;color:var(--text-2)">
+          <input type="checkbox" name="capture_face" value="1"
+                 @change="captureMode = $event.target.checked"
+                 style="width:auto;accent-color:var(--accent)">
+          Capture face from camera right now
+        </label>
+        <div class="form-hint">
+          Check this and have the student look at the camera, then click Register.
+          You can register the profile now and add the face later.
+        </div>
+      </div>
+
+      <div x-show="captureMode" x-transition style="margin-bottom:1rem">
+        <div class="badge badge-amber" style="margin-bottom:.6rem;display:inline-flex">
+          <i data-lucide="alert-triangle" style="width:12px;height:12px"></i>
+          &nbsp;Make sure the student is looking at the camera before submitting
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-full">
+        <i data-lucide="user-plus"></i>
+        <span x-text="captureMode ? 'Capture &amp; Register' : 'Register Student'">Register Student</span>
+      </button>
+    </form>
+  </div>
+
+  <!-- Live camera + registered list -->
+  <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+    <div class="card" style="padding:1.1rem">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="video"></i> Camera Preview</span>
+        <span class="badge badge-red" style="display:flex;align-items:center;gap:.3rem">
+          <span class="live-dot"></span> LIVE
+        </span>
+      </div>
+      <div class="camera-wrap">
+        <img class="camera-feed" src="{{ url_for('video') }}" alt="Live camera">
+      </div>
+      <p style="font-size:.75rem;color:var(--text-3);margin-top:.6rem;text-align:center">
+        Position the student's face in the centre of the frame.
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="list"></i> Registered Students</span>
+        <span class="badge badge-neutral">{{ students|length }}</span>
+      </div>
+      {% if students %}
+      <div class="table-wrap" style="max-height:300px;overflow-y:auto">
+        <table>
+          <thead>
+            <tr><th>Reg</th><th>Name</th><th>Face</th></tr>
+          </thead>
+          <tbody>
+            {% for s in students %}
+            <tr>
+              <td><span style="font-family:monospace;font-size:.78rem;color:var(--text-2)">{{ s.reg_number }}</span></td>
+              <td style="font-size:.85rem">{{ s.name }}</td>
+              <td>
+                {% if s.photo %}
+                  <span class="badge badge-green" style="font-size:.68rem">
+                    <i data-lucide="check" style="width:9px;height:9px"></i> Yes
+                  </span>
+                {% else %}
+                  <span class="badge badge-neutral" style="font-size:.68rem">No</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:1.5rem">
+        <p>No students registered yet.</p>
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 """
-Notifications: email (SMTP) and Telegram, both able to attach a snapshot.
-Sending happens in background threads so it never blocks the door logic.
+Notifications: email (SMTP), Telegram, and SMS (Infobip).
+Sending happens in background threads — never blocks door logic.
 """
 import os
 import smtplib
@@ -8,7 +8,6 @@ import threading
 from email.message import EmailMessage
 
 import requests
-
 import config
 
 
@@ -18,17 +17,15 @@ def _send_email(subject, body, image_path=None):
     try:
         msg = EmailMessage()
         msg["Subject"] = subject
-        msg["From"] = config.EMAIL_FROM
-        msg["To"] = config.EMAIL_TO
+        msg["From"]    = config.EMAIL_FROM
+        msg["To"]      = config.EMAIL_TO
         msg.set_content(body)
-
         if image_path and os.path.exists(image_path):
             with open(image_path, "rb") as f:
                 msg.add_attachment(
                     f.read(), maintype="image", subtype="jpeg",
                     filename=os.path.basename(image_path),
                 )
-
         with smtplib.SMTP(config.SMTP_SERVER, config.SMTP_PORT) as s:
             s.starttls()
             s.login(config.EMAIL_FROM, config.EMAIL_PASSWORD)
@@ -59,14 +56,17 @@ def _send_telegram(text, image_path=None):
     except Exception as e:
         print(f"[notifier] telegram failed: {e}")
 
+
 def _send_sms(text):
     if not config.SMS_ENABLED:
         return
     try:
         requests.post(
             f"https://{config.INFOBIP_BASE_URL}/sms/2/text/advanced",
-            headers={"Authorization": f"App {config.INFOBIP_API_KEY}",
-                     "Content-Type": "application/json"},
+            headers={
+                "Authorization": f"App {config.INFOBIP_API_KEY}",
+                "Content-Type": "application/json",
+            },
             json={"messages": [{
                 "from": config.SMS_SENDER,
                 "destinations": [{"to": config.SMS_TO}],
@@ -79,16 +79,10 @@ def _send_sms(text):
 
 
 def notify_unknown(image_path=None):
-    """Fire-and-forget alert about an unknown visitor."""
-    subject = "Smart Door: Unknown person at the door!"
-    body = "An unrecognized person was detected at your door. See attached image."
-
-    threading.Thread(
-        target=_send_email, args=(subject, body, image_path), daemon=True
-    ).start()
-    threading.Thread(
-        target=_send_telegram, args=(body, image_path), daemon=True
-    ).start()
-    threading.Thread(target=_send_sms, args=(body,), daemon=True
-    ).start()
-   
+    """Fire-and-forget alert: unrecognized person at the lab door."""
+    subject = "Lab Access Control: Unknown person detected!"
+    body    = ("An unrecognized person attempted to access the lab. "
+               "See the attached snapshot for details.")
+    threading.Thread(target=_send_email,    args=(subject, body, image_path), daemon=True).start()
+    threading.Thread(target=_send_telegram, args=(body, image_path),          daemon=True).start()
+    threading.Thread(target=_send_sms,      args=(body,),                     daemon=True).start()

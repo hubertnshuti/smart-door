@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% set active_page = "requests" %}
+
+{% block title %}Access Requests — Lab Access Control{% endblock %}
+{% block page_title %}Access Requests{% endblock %}
+{% block page_subtitle %}Review and approve student lab access requests{% endblock %}
+
+{% block content %}
+
+  {% if pending %}
+  <div class="section-header">
+    <div class="section-title">
+      Pending Review
+      <span class="badge badge-amber" style="margin-left:.5rem">{{ pending|length }}</span>
+    </div>
+  </div>
+
+  {% for req in pending %}
+  <div class="request-row" x-data="{ showApprove: false, showDeny: false }">
+    <div class="request-row-header">
+      <div>
+        <div class="request-row-name">{{ req.student_name or req.student_reg }}</div>
+        <div class="request-row-reg">{{ req.student_reg }} · submitted {{ req.created[:16] }}</div>
+      </div>
+      <span class="badge badge-amber">Pending</span>
+    </div>
+
+    <dl class="request-detail-grid">
+      <dt>Desired start</dt>
+      <dd>{{ req.desired_start[:16] }}</dd>
+      <dt>Duration</dt>
+      <dd>{{ req.desired_duration_min }} min</dd>
+      {% if req.note %}
+      <dt>Note</dt>
+      <dd>{{ req.note }}</dd>
+      {% endif %}
+    </dl>
+
+    <!-- Student card image -->
+    {% if req.card_image %}
+    <div style="margin-bottom:1rem">
+      <div class="form-label">Student Card</div>
+      <div class="card-preview">
+        <img src="{{ url_for('serve_card', filename=req.card_image) }}"
+             alt="Student card for {{ req.student_reg }}">
+      </div>
+    </div>
+    {% endif %}
+
+    {% if req.reco_file %}
+    <div style="margin-bottom:1rem">
+      <a href="{{ url_for('serve_reco', filename=req.reco_file) }}"
+         class="btn btn-ghost btn-sm" target="_blank">
+        <i data-lucide="file-text"></i> View Recommendation Letter
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="request-actions">
+
+      <!-- Approve form -->
+      <div>
+        <button type="button" class="btn btn-green btn-sm"
+                @click="showApprove = !showApprove; showDeny = false">
+          <i data-lucide="check"></i> Approve
+        </button>
+        <div x-show="showApprove" x-transition style="margin-top:.7rem;display:none">
+          <form method="POST" action="{{ url_for('approve_request', rid=req.id) }}">
+            <div class="approve-fields">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Start time</label>
+                <input class="form-control" type="datetime-local" name="start_time"
+                       value="{{ req.desired_start[:16] }}" required>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Duration (min)</label>
+                <input class="form-control" type="number" name="duration"
+                       value="{{ req.desired_duration_min }}" min="5" max="1440"
+                       style="width:110px" required>
+              </div>
+              <button type="submit" class="btn btn-green btn-sm" style="align-self:flex-end">
+                <i data-lucide="check-circle"></i> Confirm
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Deny form -->
+      <div>
+        <button type="button" class="btn btn-red btn-sm"
+                @click="showDeny = !showDeny; showApprove = false">
+          <i data-lucide="x"></i> Deny
+        </button>
+        <div x-show="showDeny" x-transition style="margin-top:.7rem;display:none">
+          <form method="POST" action="{{ url_for('deny_request', rid=req.id) }}">
+            <div style="display:flex;gap:.5rem;flex-direction:column;max-width:400px">
+              <input class="form-control" type="text" name="admin_note"
+                     placeholder="Reason (optional)">
+              <button type="submit" class="btn btn-red btn-sm">
+                <i data-lucide="x-circle"></i> Confirm Denial
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  {% endfor %}
+
+  {% else %}
+  <div class="empty-state" style="margin-bottom:2rem">
+    <i data-lucide="inbox"></i>
+    <p>No pending requests. All caught up!</p>
+  </div>
+  {% endif %}
+
+  <!-- Reviewed requests -->
+  {% if reviewed %}
+  <hr class="divider" style="margin:2rem 0">
+  <div class="section-header">
+    <div class="section-title">
+      Recently Reviewed
+      <span class="badge badge-neutral" style="margin-left:.5rem">{{ reviewed|length }}</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Student</th>
+          <th>Requested</th>
+          <th>Duration</th>
+          <th>Status</th>
+          <th>Note</th>
+          <th>Decided</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in reviewed %}
+        <tr>
+          <td>
+            <strong>{{ req.student_name or req.student_reg }}</strong>
+            <div style="font-size:.72rem;color:var(--text-3)">{{ req.student_reg }}</div>
+          </td>
+          <td class="td-muted">{{ req.desired_start[:16] }}</td>
+          <td class="td-muted">{{ req.desired_duration_min }}m</td>
+          <td>
+            {% if req.status == 'approved' %}
+              <span class="badge badge-green">Approved</span>
+            {% elif req.status == 'denied' %}
+              <span class="badge badge-red">Denied</span>
+            {% else %}
+              <span class="badge badge-neutral">{{ req.status }}</span>
+            {% endif %}
+          </td>
+          <td class="td-muted">{{ req.admin_note or '—' }}</td>
+          <td class="td-muted">{{ req.decided_at[:16] if req.decided_at else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+
+{% endblock %}

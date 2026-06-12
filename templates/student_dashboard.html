@@ -1,0 +1,163 @@
+{% extends "student_base.html" %}
+{% set active_page = "dashboard" %}
+
+{% block title %}My Dashboard — Lab Access Control{% endblock %}
+
+{% block content %}
+<div x-data="studentDash()" x-init="init()">
+
+  <!-- Greeting -->
+  <div style="margin-bottom:1.5rem">
+    <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1)">
+      Hello, {{ student_name }} 👋
+    </h2>
+    <div style="font-size:.85rem;color:var(--text-3);margin-top:.2rem">
+      {{ session.student_reg }} · {{ now[:10] }}
+    </div>
+  </div>
+
+  <!-- Status card -->
+  {% if portal_status == 'active' %}
+  <div class="status-card active">
+    <div class="status-icon"><i data-lucide="door-open"></i></div>
+    <div class="status-title">Lab Access Active</div>
+    <div class="status-sub">
+      Your access is currently active until
+      <strong>{{ grant.end_time[11:16] }}</strong> today.
+    </div>
+    <div class="status-detail">
+      <i data-lucide="clock" style="width:13px;height:13px"></i>
+      <span id="countdown">—</span> remaining
+    </div>
+    <form method="POST" action="{{ url_for('student_checkout') }}" style="margin-top:.5rem">
+      <button type="submit" class="btn btn-ghost btn-sm"
+              onclick="return confirm('Check yourself out early?')">
+        <i data-lucide="log-out"></i> Early checkout
+      </button>
+    </form>
+  </div>
+
+  {% elif portal_status == 'upcoming' %}
+  <div class="status-card upcoming">
+    <div class="status-icon"><i data-lucide="calendar-clock"></i></div>
+    <div class="status-title">Access Scheduled</div>
+    <div class="status-sub">
+      You have an upcoming grant starting at
+      <strong>{{ grant.start_time[11:16] }}</strong> on
+      <strong>{{ grant.start_time[:10] }}</strong>.
+    </div>
+    <div class="status-detail">
+      <i data-lucide="timer" style="width:13px;height:13px"></i>
+      Duration: {{ grant_duration_min }} minutes
+    </div>
+  </div>
+
+  {% elif portal_status == 'pending' %}
+  <div class="status-card pending">
+    <div class="status-icon"><i data-lucide="hourglass"></i></div>
+    <div class="status-title">Request Under Review</div>
+    <div class="status-sub">
+      Your access request submitted on
+      <strong>{{ request.created[:16] }}</strong>
+      is pending admin review.
+    </div>
+    <div class="status-detail">
+      <i data-lucide="info" style="width:13px;height:13px"></i>
+      Requested {{ request.desired_start[:16] }} · {{ request.desired_duration_min }}min
+    </div>
+  </div>
+
+  {% elif portal_status == 'denied' %}
+  <div class="status-card denied">
+    <div class="status-icon"><i data-lucide="x-circle"></i></div>
+    <div class="status-title">Last Request Denied</div>
+    <div class="status-sub">
+      Your most recent request was denied.
+      {% if request.admin_note %}
+        Admin note: <em>{{ request.admin_note }}</em>
+      {% endif %}
+    </div>
+    <a href="{{ url_for('student_request_form') }}" class="btn btn-primary btn-sm" style="margin-top:.5rem">
+      <i data-lucide="send"></i> Submit New Request
+    </a>
+  </div>
+
+  {% else %}
+  <div class="status-card none">
+    <div class="status-icon"><i data-lucide="key-round"></i></div>
+    <div class="status-title">No Active Access</div>
+    <div class="status-sub">
+      You don't have any active or pending lab access.
+      Submit a request to get in.
+    </div>
+    <a href="{{ url_for('student_request_form') }}" class="btn btn-primary" style="margin-top:.5rem">
+      <i data-lucide="send"></i> Request Lab Access
+    </a>
+  </div>
+  {% endif %}
+
+  <!-- Recent door events -->
+  {% if recent_logs %}
+  <div class="card" style="margin-top:1.5rem">
+    <div class="card-header">
+      <span class="card-title"><i data-lucide="activity"></i> Recent Door Events</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Action</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in recent_logs %}
+          <tr>
+            <td class="td-muted">{{ log.timestamp[:16] if log.timestamp else '—' }}</td>
+            <td>{{ log.action or '—' }}</td>
+            <td>
+              {% if log.status == 'Granted' %}
+                <span class="badge badge-green">Granted</span>
+              {% elif log.status == 'Denied' %}
+                <span class="badge badge-red">Denied</span>
+              {% else %}
+                <span class="badge badge-neutral">{{ log.status }}</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function studentDash() {
+    return {
+      init() {
+        {% if portal_status == 'active' %}
+        this.startCountdown('{{ grant.end_time }}');
+        {% endif %}
+      },
+      startCountdown(endStr) {
+        const el = document.getElementById('countdown');
+        if (!el) return;
+        const update = () => {
+          const diff = Math.max(0, Math.floor((new Date(endStr.replace(' ','T')) - Date.now()) / 1000));
+          if (diff === 0) { el.textContent = 'Expired'; return; }
+          const h = Math.floor(diff/3600), m = Math.floor((diff%3600)/60), s = diff%60;
+          el.textContent = (h>0?h+'h ':'')+m+'m '+s+'s';
+        };
+        update();
+        setInterval(update, 1000);
+      }
+    };
+  }
+</script>
+{% endblock %}

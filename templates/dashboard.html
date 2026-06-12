@@ -1,88 +1,256 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Smart Door — Dashboard</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
-  <nav class="topbar">
-    <span class="brand">Smart Door</span>
-    <div class="nav-links">
-      <a href="{{ url_for('dashboard') }}" class="active">Dashboard</a>
-      <a href="{{ url_for('register') }}">Members</a>
-      <a href="{{ url_for('logout') }}">Logout</a>
-    </div>
-  </nav>
+{% extends "base.html" %}
+{% set active_page = "dashboard" %}
 
-  <div class="container">
-    <div class="grid">
-      <div class="card">
-        <h2>Live camera</h2>
-        <img class="stream" src="{{ url_for('video') }}" alt="Live feed">
+{% block title %}Dashboard — Lab Access Control{% endblock %}
+{% block page_title %}Dashboard{% endblock %}
+{% block page_subtitle %}Live monitoring &amp; door control{% endblock %}
+
+{% block topbar_right %}
+  <div id="clock" style="font-size:.82rem;color:var(--text-3);font-variant-numeric:tabular-nums"></div>
+{% endblock %}
+
+{% block content %}
+<div x-data="dashApp()" x-init="init()" @keydown.escape.window="null">
+
+  <!-- Stats row -->
+  <div class="stats-row">
+    <a class="stat-link" href="{{ url_for('logs') }}?preset=today">
+      <div class="stat-card green">
+        <div class="stat-label">Today's Entries</div>
+        <div class="stat-value">{{ stats.today_entries }}</div>
+        <div class="stat-icon"><i data-lucide="door-open"></i></div>
+      </div>
+    </a>
+    <a class="stat-link" href="{{ url_for('grants') }}">
+      <div class="stat-card accent">
+        <div class="stat-label">Active Grants</div>
+        <div class="stat-value">{{ stats.grants_active }}</div>
+        <div class="stat-icon"><i data-lucide="key-round"></i></div>
+      </div>
+    </a>
+    <a class="stat-link" href="{{ url_for('students') }}">
+      <div class="stat-card blue">
+        <div class="stat-label">Registered Students</div>
+        <div class="stat-value">{{ stats.students_total }}</div>
+        <div class="stat-icon"><i data-lucide="graduation-cap"></i></div>
+      </div>
+    </a>
+    <a class="stat-link" href="{{ url_for('staff') }}">
+      <div class="stat-card amber">
+        <div class="stat-label">Staff Members</div>
+        <div class="stat-value">{{ stats.staff_total }}</div>
+        <div class="stat-icon"><i data-lucide="shield-check"></i></div>
+      </div>
+    </a>
+  </div>
+
+  <!-- Main grid: camera + door status -->
+  <div class="dash-grid">
+
+    <!-- Camera feed -->
+    <div class="card" style="padding:1.1rem">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="video"></i> Live Camera Feed</span>
+        <span class="badge badge-red" style="display:flex;align-items:center;gap:.3rem">
+          <span class="live-dot"></span> LIVE
+        </span>
+      </div>
+      <div class="camera-wrap">
+        <img class="camera-feed" src="{{ url_for('video') }}" alt="Live feed">
+        <div class="camera-overlay">
+          <span class="live-dot"></span>
+          Lab Entrance Camera
+        </div>
+      </div>
+    </div>
+
+    <!-- Door status + controls -->
+    <div class="card door-status-card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="shield"></i> Door Status</span>
       </div>
 
-      <div class="card">
-        <h2>Door control</h2>
-        <div class="status-row">
-          <span>Status</span>
-          <span id="door-status" class="badge">{{ state.door }}</span>
+      <div class="door-indicator">
+        <div class="door-ring" :class="doorOpen ? 'open' : 'locked'">
+          <template x-if="doorOpen">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 9.9-1"/>
+            </svg>
+          </template>
+          <template x-if="!doorOpen">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              <circle cx="12" cy="16" r="1"/>
+            </svg>
+          </template>
         </div>
-        <div class="status-row">
-          <span>Last person</span>
-          <span id="last-person">{{ state.last_person }}</span>
+        <div class="door-label" x-text="doorOpen ? 'Door Open' : 'Door Locked'"></div>
+      </div>
+
+      <div class="door-meta">
+        <div class="meta-row">
+          <span class="meta-key">Last person</span>
+          <span class="meta-value" x-text="lastPerson"></span>
         </div>
-        <div class="status-row">
-          <span>Last event</span>
-          <span id="last-status">{{ state.last_status }}</span>
+        <div class="meta-row">
+          <span class="meta-key">Type</span>
+          <span class="meta-value">
+            <span class="badge"
+              :class="{
+                'badge-blue':    lastType === 'student',
+                'badge-amber':   lastType === 'staff',
+                'badge-accent':  lastType === 'admin',
+                'badge-neutral': lastType === '—' || lastType === 'unknown'
+              }"
+              x-text="lastType"></span>
+          </span>
         </div>
-        <div class="status-row">
-          <span>Time</span>
-          <span id="last-time">{{ state.last_time }}</span>
+        <div class="meta-row">
+          <span class="meta-key">Decision</span>
+          <span class="meta-value">
+            <span class="badge"
+              :class="{
+                'badge-green':   lastStatus === 'Granted',
+                'badge-red':     lastStatus === 'Denied',
+                'badge-accent':  lastStatus === 'Manual',
+                'badge-neutral': lastStatus === '—'
+              }"
+              x-text="lastStatus"></span>
+          </span>
         </div>
-        <div class="btn-group">
-          <button class="btn btn-primary" onclick="action('open')">Open door</button>
-          <button class="btn btn-dark" onclick="action('lock')">Lock door</button>
+        <div class="meta-row">
+          <span class="meta-key">At</span>
+          <span class="meta-value" x-text="lastTime"></span>
         </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="door-controls">
+        <button class="btn btn-green btn-full" @click="openDoor()">
+          <i data-lucide="door-open"></i> Open
+        </button>
+        <button class="btn btn-red btn-full" @click="lockDoor()">
+          <i data-lucide="lock"></i> Lock
+        </button>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Activity log</h2>
-      <table>
-        <thead>
-          <tr><th>Time</th><th>Person</th><th>Status</th><th>Action</th></tr>
-        </thead>
-        <tbody id="log-body">
-          {% for log in logs %}
-          <tr>
-            <td>{{ log.timestamp }}</td>
-            <td>{{ log.person }}</td>
-            <td><span class="tag {{ 'tag-ok' if log.status == 'Authorized' else ('tag-bad' if log.status == 'Unauthorized' else 'tag-neutral') }}">{{ log.status }}</span></td>
-            <td>{{ log.action }}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+  </div><!-- /dash-grid -->
+
+  <!-- Live activity feed -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i data-lucide="activity"></i> Live Activity Feed</span>
+      <span class="badge badge-neutral" x-text="activities.length + ' events'"></span>
+    </div>
+
+    <div class="feed-list" id="feed-list">
+      <template x-for="(ev, i) in activities" :key="i">
+        <div class="feed-item"
+             :class="{
+               'granted': ev.status === 'Granted',
+               'denied':  ev.status === 'Denied',
+               'manual':  ev.status === 'Manual'
+             }">
+          <div class="feed-avatar" x-text="initials(ev.person)"></div>
+          <div class="feed-body">
+            <div class="feed-name" x-text="ev.person + (ev.reg_number ? ' · ' + ev.reg_number : '')"></div>
+            <div class="feed-action" x-text="ev.action"></div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.3rem;flex-shrink:0">
+            <span class="badge"
+              :class="{
+                'badge-green':   ev.status === 'Granted',
+                'badge-red':     ev.status === 'Denied',
+                'badge-accent':  ev.status === 'Manual'
+              }"
+              x-text="ev.status"></span>
+            <span class="feed-time" x-text="ev.time"></span>
+          </div>
+        </div>
+      </template>
+
+      <template x-if="activities.length === 0">
+        <div class="empty-state">
+          <i data-lucide="activity" style="width:36px;height:36px;margin:0 auto .8rem;display:block;opacity:.3"></i>
+          <p>No activity yet — events will appear here in real-time.</p>
+        </div>
+      </template>
     </div>
   </div>
 
-  <script>
-    function action(kind) {
-      fetch('/' + kind, { method: 'POST' })
-        .then(r => r.json())
-        .then(() => refresh());
-    }
-    function refresh() {
-      fetch('/status').then(r => r.json()).then(s => {
-        document.getElementById('door-status').textContent = s.door;
-        document.getElementById('last-person').textContent = s.last_person;
-        document.getElementById('last-status').textContent = s.last_status;
-        document.getElementById('last-time').textContent = s.last_time;
-      });
-    }
-    setInterval(refresh, 3000);
-  </script>
-</body>
-</html>
+</div><!-- /x-data -->
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Live clock
+  const clockEl = document.getElementById('clock');
+  function updateClock() {
+    const now = new Date();
+    clockEl.textContent = now.toLocaleString('en-GB', {
+      weekday: 'short', year: 'numeric', month: 'short',
+      day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  function dashApp() {
+    return {
+      doorOpen:   {{ 'true' if door_open else 'false' }},
+      lastPerson: '{{ state.last_person }}',
+      lastType:   '{{ state.last_type }}',
+      lastStatus: '{{ state.last_status }}',
+      lastTime:   '{{ state.last_time }}',
+
+      activities: {{ initial_logs | tojson | safe }}.map(l => ({
+        person:     l.person_name,
+        type:       l.person_type,
+        reg_number: l.reg_number || '',
+        status:     l.status,
+        action:     l.action,
+        time:       l.timestamp ? l.timestamp.slice(11, 19) : '',
+        door_opened: l.status === 'Granted',
+      })),
+
+      init() {
+        const socket = io();
+        socket.on('access_event', (e) => {
+          this.activities.unshift(e);
+          if (this.activities.length > 60) this.activities.pop();
+          this.lastPerson = e.person;
+          this.lastType   = e.type || '—';
+          this.lastStatus = e.status;
+          this.lastTime   = e.time;
+          if (e.door_opened !== undefined) this.doorOpen = e.door_opened;
+          // Refresh Lucide icons after Alpine adds new DOM
+          this.$nextTick(() => lucide.createIcons());
+        });
+        socket.on('door_status', (e) => {
+          this.doorOpen = e.is_open;
+        });
+      },
+
+      initials(name) {
+        if (!name || name === 'Unknown') return '?';
+        return name.split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+      },
+
+      async openDoor() {
+        await fetch('/open', { method: 'POST' });
+        this.doorOpen = true;
+      },
+      async lockDoor() {
+        await fetch('/lock', { method: 'POST' });
+        this.doorOpen = false;
+      },
+    };
+  }
+</script>
+{% endblock %}

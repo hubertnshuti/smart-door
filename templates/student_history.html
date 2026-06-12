@@ -1,0 +1,162 @@
+{% extends "student_base.html" %}
+{% set active_page = "history" %}
+
+{% block title %}My History — Lab Access Control{% endblock %}
+
+{% block content %}
+
+<div style="margin-bottom:1.5rem">
+  <h2 style="font-size:1.2rem;font-weight:700;color:var(--text-1)">My History</h2>
+  <p style="font-size:.85rem;color:var(--text-3);margin-top:.3rem">
+    All your access requests, grants, and door events.
+  </p>
+</div>
+
+<!-- Access requests -->
+<div class="section-header">
+  <div class="section-title">
+    Access Requests
+    <span class="badge badge-neutral" style="margin-left:.5rem">{{ requests|length }}</span>
+  </div>
+</div>
+
+{% if requests %}
+<div class="card" style="margin-bottom:1.8rem;padding:0">
+  <div class="table-wrap" style="border:none">
+    <table>
+      <thead>
+        <tr>
+          <th>Submitted</th>
+          <th>Start</th>
+          <th>Duration</th>
+          <th>Status</th>
+          <th>Admin Note</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for req in requests %}
+        <tr>
+          <td class="td-muted">{{ req.created[:16] }}</td>
+          <td class="td-muted">{{ req.desired_start[:16] }}</td>
+          <td class="td-muted">{{ req.desired_duration_min }}m</td>
+          <td>
+            {% if req.status == 'approved' %}
+              <span class="badge badge-green">Approved</span>
+            {% elif req.status == 'denied' %}
+              <span class="badge badge-red">Denied</span>
+            {% else %}
+              <span class="badge badge-amber">Pending</span>
+            {% endif %}
+          </td>
+          <td class="td-muted">{{ req.admin_note or '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state" style="margin-bottom:1.8rem">
+  <i data-lucide="send"></i>
+  <p>No access requests yet.</p>
+</div>
+{% endif %}
+
+<!-- Grants -->
+<div class="section-header">
+  <div class="section-title">
+    Access Grants
+    <span class="badge badge-neutral" style="margin-left:.5rem">{{ grants|length }}</span>
+  </div>
+</div>
+
+{% if grants %}
+<div class="card" style="margin-bottom:1.8rem;padding:0">
+  <div class="table-wrap" style="border:none">
+    <table>
+      <thead>
+        <tr>
+          <th>Type</th>
+          <th>Start</th>
+          <th>End</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for g in grants %}
+        <tr>
+          <td>
+            <span class="badge badge-neutral">{{ g.reason|title }}</span>
+            {% if g.class_label %}
+              <div style="font-size:.72rem;color:var(--text-3);margin-top:.15rem">{{ g.class_label }}</div>
+            {% endif %}
+          </td>
+          <td class="td-muted">{{ g.start_time[:16] if g.start_time else '—' }}</td>
+          <td class="td-muted">{{ g.end_time[:16] if g.end_time else '—' }}</td>
+          <td>
+            {% if g.active %}
+              <span class="badge badge-green">Active</span>
+            {% else %}
+              <span class="badge badge-neutral">Ended</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state" style="margin-bottom:1.8rem">
+  <i data-lucide="key-round"></i>
+  <p>No access grants yet.</p>
+</div>
+{% endif %}
+
+<!-- Door events -->
+<div class="section-header">
+  <div class="section-title">
+    Door Events
+    <span class="badge badge-neutral" style="margin-left:.5rem">{{ log_list|length }}</span>
+  </div>
+</div>
+
+{% if log_list %}
+<div class="card" style="padding:0">
+  <div class="table-wrap" style="border:none">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Action</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in log_list %}
+        <tr>
+          <td class="td-muted">{{ log.timestamp[:16] if log.timestamp else '—' }}</td>
+          <td>{{ log.action or '—' }}</td>
+          <td>
+            {% if log.status == 'Granted' %}
+              <span class="badge badge-green">Granted</span>
+            {% elif log.status == 'Denied' %}
+              <span class="badge badge-red">Denied</span>
+            {% else %}
+              <span class="badge badge-neutral">{{ log.status }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="empty-state">
+  <i data-lucide="activity"></i>
+  <p>No door events recorded for your account.</p>
+</div>
+{% endif %}
+
+{% endblock %}

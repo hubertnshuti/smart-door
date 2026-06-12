@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% set active_page = "grants" %}
+
+{% block title %}Access Grants — Lab Access Control{% endblock %}
+{% block page_title %}Access Grants{% endblock %}
+{% block page_subtitle %}Grant time-limited lab access to students{% endblock %}
+
+{% block content %}
+<div x-data="grantsApp()" x-init="startCountdowns()">
+
+  <!-- Action buttons -->
+  <div style="display:flex;gap:.7rem;margin-bottom:1.5rem;flex-wrap:wrap">
+    <button class="btn btn-primary" @click="showPanel = showPanel === 'individual' ? null : 'individual'">
+      <i data-lucide="user-check"></i> Grant Individual Access
+    </button>
+    <button class="btn btn-ghost" @click="showPanel = showPanel === 'class' ? null : 'class'">
+      <i data-lucide="users"></i> Grant Class Access
+    </button>
+  </div>
+
+  <!-- Individual grant panel -->
+  <div x-show="showPanel === 'individual'" x-transition class="grant-panel" style="display:none">
+    <div class="grant-panel-title">
+      <i data-lucide="user-check"></i> Individual Access Grant
+    </div>
+    <form method="POST" action="{{ url_for('grant_individual') }}">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Registration Numbers</label>
+          <textarea class="form-control" name="reg_numbers" rows="3"
+                    placeholder="STU/2024/001&#10;STU/2024/002&#10;or comma separated"></textarea>
+          <div class="form-hint">One per line or comma-separated. Multiple students at once.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <div class="duration-pills">
+            {% for p in presets %}
+            <button type="button" class="duration-pill"
+                    @click="setDuration('individual', {{ p }})"
+                    :class="{ selected: individualDuration == {{ p }} }">
+              {{ p }}m
+            </button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="duration" x-model="individualDuration">
+          <input class="form-control" type="number" placeholder="Or custom minutes…"
+                 min="5" max="1440"
+                 @input="individualDuration = $event.target.value">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-green">
+        <i data-lucide="key-round"></i>
+        Grant Access (<span x-text="individualDuration"></span> min)
+      </button>
+    </form>
+  </div>
+
+  <!-- Class grant panel -->
+  <div x-show="showPanel === 'class'" x-transition class="grant-panel" style="display:none">
+    <div class="grant-panel-title">
+      <i data-lucide="users"></i> Class Access Grant
+    </div>
+    <form method="POST" action="{{ url_for('grant_class') }}">
+      <div class="form-group">
+        <label class="form-label">Class Label</label>
+        <input class="form-control" type="text" name="class_label"
+               placeholder="e.g. CS301 Lecture, Database Lab, Exam 2024" required>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Student Registration Numbers</label>
+          <textarea class="form-control" name="reg_numbers" rows="5"
+                    placeholder="STU/2024/001&#10;STU/2024/002&#10;STU/2024/003&#10;…"></textarea>
+          <div class="form-hint">One per line or comma-separated.</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Duration</label>
+          <div class="duration-pills">
+            {% for p in presets %}
+            <button type="button" class="duration-pill"
+                    @click="setDuration('class', {{ p }})"
+                    :class="{ selected: classDuration == {{ p }} }">
+              {{ p }}m
+            </button>
+            {% endfor %}
+          </div>
+          <input type="hidden" name="duration" x-model="classDuration">
+          <input class="form-control" type="number" placeholder="Or custom minutes…"
+                 min="5" max="1440"
+                 @input="classDuration = $event.target.value">
+        </div>
+      </div>
+      <button type="submit" class="btn btn-green">
+        <i data-lucide="key-round"></i>
+        Create Class Grant (<span x-text="classDuration"></span> min)
+      </button>
+    </form>
+  </div>
+
+  <!-- Active grants -->
+  <div class="section-header">
+    <div class="section-title">
+      Active Grants
+      <span class="badge badge-green" style="margin-left:.5rem">{{ active|length }}</span>
+    </div>
+  </div>
+
+  {% if active %}
+  <div class="grant-cards" style="margin-bottom:2rem">
+    {% for g in active %}
+    <div class="grant-card">
+      <div class="grant-card-name">{{ g.student_name }}</div>
+      <div class="grant-card-reg">{{ g.reg_number }}</div>
+      <div class="grant-card-label">
+        <i data-lucide="{% if g.reason == 'class' %}users{% else %}user{% endif %}"
+           style="width:11px;height:11px"></i>
+        {{ g.class_label or g.reason|title }}
+      </div>
+      <div class="grant-countdown">
+        <i data-lucide="clock"></i>
+        <span>Expires in&nbsp;</span>
+        <span class="countdown-timer"
+              data-end="{{ g.end_time }}"
+              x-text="countdowns['{{ g.id }}'] || '…'"></span>
+      </div>
+      <div style="font-size:.72rem;color:var(--text-3);margin-top:.3rem">
+        by {{ g.granted_by }} · until {{ g.end_time[11:16] }}
+      </div>
+      <div class="grant-footer">
+        <span style="font-size:.72rem;color:var(--text-3)">
+          From {{ g.start_time[11:16] }}
+        </span>
+        <div style="display:flex;gap:.4rem">
+          <form method="POST" action="{{ url_for('admin_checkout', gid=g.id) }}"
+                onsubmit="return confirm('Check out {{ g.student_name }} early?')">
+            <button type="submit" class="btn btn-amber btn-sm">
+              <i data-lucide="log-out"></i> Checkout
+            </button>
+          </form>
+          <form method="POST" action="{{ url_for('revoke_grant', gid=g.id) }}"
+                onsubmit="return confirm('Revoke access for {{ g.student_name }}?')">
+            <button type="submit" class="btn-danger btn-sm">
+              <i data-lucide="x"></i> Revoke
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" style="margin-bottom:2rem">
+    <i data-lucide="key-round"></i>
+    <p>No active grants right now. Use the buttons above to grant access.</p>
+  </div>
+  {% endif %}
+
+  <!-- Upcoming grants -->
+  {% if upcoming %}
+  <div class="section-header">
+    <div class="section-title">
+      Upcoming Grants
+      <span class="badge badge-amber" style="margin-left:.5rem">{{ upcoming|length }}</span>
+    </div>
+  </div>
+  <div class="grant-cards">
+    {% for g in upcoming %}
+    <div class="grant-card upcoming">
+      <div class="grant-card-name">{{ g.student_name }}</div>
+      <div class="grant-card-reg">{{ g.reg_number }}</div>
+      <div class="grant-card-label">
+        {{ g.class_label or g.reason|title }}
+      </div>
+      <div style="font-size:.75rem;color:var(--text-2);margin-top:.4rem">
+        Starts {{ g.start_time[11:16] }} · Ends {{ g.end_time[11:16] }}
+      </div>
+      <div class="grant-footer">
+        <span></span>
+        <form method="POST" action="{{ url_for('revoke_grant', gid=g.id) }}"
+              onsubmit="return confirm('Cancel upcoming grant for {{ g.student_name }}?')">
+          <button type="submit" class="btn-danger btn-sm">
+            <i data-lucide="x"></i> Cancel
+          </button>
+        </form>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function grantsApp() {
+    return {
+      showPanel: null,
+      individualDuration: 60,
+      classDuration: 90,
+      countdowns: {},
+
+      setDuration(type, val) {
+        if (type === 'individual') this.individualDuration = val;
+        else this.classDuration = val;
+      },
+
+      startCountdowns() {
+        const update = () => {
+          document.querySelectorAll('[data-end]').forEach(el => {
+            const end  = new Date(el.dataset.end.replace(' ', 'T'));
+            const diff = Math.max(0, Math.floor((end - Date.now()) / 1000));
+            const h = Math.floor(diff / 3600);
+            const m = Math.floor((diff % 3600) / 60);
+            const s = diff % 60;
+            let label = '';
+            if (h > 0) label += h + 'h ';
+            if (m > 0 || h > 0) label += m + 'm ';
+            label += s + 's';
+            el.textContent = diff > 0 ? label : 'Expired';
+          });
+        };
+        update();
+        setInterval(update, 1000);
+      },
+    };
+  }
+</script>
+{% endblock %}

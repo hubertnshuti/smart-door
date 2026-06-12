@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% set active_page = "roster" %}
+
+{% block title %}School Roster — Lab Access Control{% endblock %}
+{% block page_title %}School Roster{% endblock %}
+{% block page_subtitle %}Manage who is eligible to create a student portal account{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('students') }}" class="btn btn-ghost btn-sm">
+    <i data-lucide="graduation-cap"></i> Students
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Add entry form -->
+<div class="card" style="margin-bottom:1.5rem">
+  <div class="card-header">
+    <span class="card-title"><i data-lucide="user-plus"></i> Add to Roster</span>
+  </div>
+  <form method="POST" action="{{ url_for('roster_add') }}">
+    <div class="form-row" style="align-items:flex-end">
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Registration Number <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="text" name="reg_number"
+               placeholder="e.g. STU/2024/011" required>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Full Name <span style="color:var(--red)">*</span></label>
+        <input class="form-control" type="text" name="name"
+               placeholder="e.g. Alice Uwimana" required>
+      </div>
+      <div class="form-group" style="margin-bottom:0">
+        <label class="form-label">Program</label>
+        <input class="form-control" type="text" name="program"
+               placeholder="e.g. Computer Science">
+      </div>
+      <div>
+        <button type="submit" class="btn btn-primary">
+          <i data-lucide="plus"></i> Add
+        </button>
+      </div>
+    </div>
+  </form>
+  <div class="info-box" style="margin-top:1rem">
+    <i data-lucide="info"></i>
+    Students registered via the Admin → Students page are added to this roster automatically.
+    Use this page to add eligible students who don't need face enrollment yet.
+  </div>
+</div>
+
+<!-- Roster table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">
+      <i data-lucide="list-checks"></i>
+      All Roster Entries
+      <span class="badge badge-neutral" style="margin-left:.3rem">{{ roster|length }}</span>
+    </span>
+  </div>
+
+  {% if roster %}
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Reg Number</th>
+          <th>Name</th>
+          <th>Program</th>
+          <th>Account</th>
+          <th>Face Enrolled</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for entry in roster %}
+        <tr>
+          <td>
+            <span style="font-family:monospace;font-size:.82rem;color:var(--text-2)">
+              {{ entry.reg_number }}
+            </span>
+          </td>
+          <td><strong>{{ entry.name }}</strong></td>
+          <td class="td-muted">{{ entry.program or '—' }}</td>
+          <td>
+            {% if entry.has_account %}
+              <span class="badge badge-green">
+                <i data-lucide="check" style="width:10px;height:10px"></i> Active
+              </span>
+            {% else %}
+              <span class="badge badge-neutral">No account</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if entry.has_face %}
+              <span class="badge badge-accent">
+                <i data-lucide="scan-face" style="width:10px;height:10px"></i> Enrolled
+              </span>
+            {% else %}
+              <span class="badge badge-neutral">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <form method="POST"
+                  action="{{ url_for('roster_delete_entry', reg=entry.reg_number) }}"
+                  onsubmit="return confirm('Remove {{ entry.reg_number }} from the roster? Their student account and face data are kept.')">
+              <button type="submit" class="btn-danger btn-sm">
+                <i data-lucide="trash-2"></i> Remove
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state">
+    <i data-lucide="list-checks"></i>
+    <p>No roster entries yet. Add one above or register students via the Students page.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}

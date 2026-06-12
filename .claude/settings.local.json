@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c ' *)",
+      "Bash(pip install *)",
+      "Bash(python -c \"import cv2; print\\('cv2 OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py'\\).read\\(\\)\\); print\\('app.py: OK'\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('app.py: OK'\\)\")",
+      "Bash(python app.py)",
+      "Bash(taskkill /f /im python.exe)",
+      "Bash(findstr /i \"python\\\\|success\\\\|not found\")",
+      "PowerShell(Stop-Process *)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('database.py', encoding='utf-8'\\).read\\(\\)\\); print\\('database.py: OK'\\)\")",
+      "Bash(curl -s http://127.0.0.1:5000/admin/login)",
+      "Bash(curl -s http://127.0.0.1:5000/)",
+      "Bash(netstat -ano)",
+      "Bash(findstr :5000)",
+      "Bash(taskkill /F /PID 7340 /PID 14188 /PID 27088)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(taskkill /F /PID 7340)",
+      "Bash(taskkill /F /PID 14188)",
+      "Bash(taskkill /F /PID 27088)",
+      "PowerShell(Start-Process python -ArgumentList \"app.py\" -WorkingDirectory \"C:\\\\Users\\\\user\\\\Desktop\\\\smart-door\" -WindowStyle Normal)",
+      "PowerShell(Start-Sleep -Seconds 8; \\(Invoke-WebRequest -Uri \"http://127.0.0.1:5000/admin/login\" -UseBasicParsing -MaximumRedirection 0 -ErrorAction SilentlyContinue\\).StatusCode)",
+      "PowerShell(Start-Sleep -Seconds 20; try { \\(Invoke-WebRequest -Uri \"http://127.0.0.1:5000/admin/login\" -UseBasicParsing -MaximumRedirection 0 -ErrorAction Stop\\).StatusCode } catch { $_.Exception.Message })",
+      "PowerShell(Get-Command *)",
+      "PowerShell($r = Invoke-WebRequest -Uri \"http://127.0.0.1:5000/admin/login\" -UseBasicParsing -MaximumRedirection 0; Write-Host \"Status: $\\($r.StatusCode\\)\"; $r.Content | Select-String \"login-title|login-sub|Admin Portal|placeholder\" | Select-Object -First 10)"
+    ]
+  }
+}

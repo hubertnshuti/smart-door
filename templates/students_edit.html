@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+{% set active_page = "students" %}
+
+{% block title %}Edit Student — Lab Access Control{% endblock %}
+{% block page_title %}Edit Student{% endblock %}
+{% block page_subtitle %}Update info or re-capture face for {{ student.name }}{% endblock %}
+
+{% block topbar_right %}
+  <a href="{{ url_for('students') }}" class="btn btn-ghost btn-sm">
+    <i data-lucide="arrow-left"></i> Back
+  </a>
+{% endblock %}
+
+{% block content %}
+<div x-data="editApp()" x-init="init()">
+<div class="register-grid">
+
+  <!-- Left: info form + face capture -->
+  <div style="display:flex;flex-direction:column;gap:1.2rem">
+
+    <!-- Info form -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="user"></i> Student Info</span>
+      </div>
+      <form method="POST" action="{{ url_for('edit_student', sid=student.id) }}">
+        <input type="hidden" name="action" value="info">
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input class="form-control" type="text" name="name"
+                 value="{{ student.name }}" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Registration Number</label>
+          <input class="form-control" type="text" name="reg_number"
+                 value="{{ student.reg_number }}" placeholder="e.g. STU/2024/001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Program / Course</label>
+          <input class="form-control" type="text" name="program"
+                 value="{{ student.program or '' }}" placeholder="e.g. Computer Science">
+        </div>
+        <button type="submit" class="btn btn-primary btn-full">
+          <i data-lucide="save"></i> Save Info
+        </button>
+      </form>
+    </div>
+
+    <!-- Face re-capture form -->
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title"><i data-lucide="camera"></i> Re-capture Face</span>
+        {% if student.photo %}
+          <span class="badge badge-green"><i data-lucide="check" style="width:10px;height:10px"></i> Enrolled</span>
+        {% else %}
+          <span class="badge badge-neutral">No face yet</span>
+        {% endif %}
+      </div>
+
+      <form method="POST" action="{{ url_for('edit_student', sid=student.id) }}"
+            enctype="multipart/form-data">
+        <input type="hidden" name="action" value="face">
+
+        <!-- Camera preview -->
+        <div class="camera-wrap" style="margin-bottom:1rem">
+          <img id="camFeed" class="camera-feed" src="{{ url_for('video') }}" alt="Camera feed">
+          <div class="camera-overlay"><span class="live-dot"></span> Camera</div>
+        </div>
+
+        <!-- Snap controls -->
+        <div style="display:flex;gap:.7rem;margin-bottom:1rem">
+          <button type="button" class="btn btn-ghost btn-full" @click="snap()">
+            <i data-lucide="aperture"></i> Capture Snapshot
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" @click="clearSnap()" x-show="snapped">
+            <i data-lucide="x"></i>
+          </button>
+        </div>
+
+        <!-- Hidden canvas for snapshot -->
+        <canvas id="snapCanvas" style="display:none"></canvas>
+        <input type="hidden" name="snapshot_data" id="snapshotData">
+
+        <div x-show="snapped" style="display:none;margin-bottom:1rem">
+          <img id="snapPreview" style="width:100%;border-radius:8px;border:1px solid var(--border)">
+          <div class="form-hint" style="margin-top:.4rem">
+            <i data-lucide="check-circle" style="width:12px;height:12px;display:inline;color:var(--green)"></i>
+            Snapshot ready — click "Save Face" to enroll.
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-green btn-full" :disabled="!snapped">
+          <i data-lucide="scan-face"></i> Save Face
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Right: grant history -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title"><i data-lucide="clock"></i> Recent Grants</span>
+      <span class="badge badge-neutral">{{ grants|length }}</span>
+    </div>
+
+    {% if grants %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for g in grants %}
+          <tr>
+            <td>
+              <span class="badge badge-neutral">{{ g.reason|title }}</span>
+              {% if g.class_label %}
+                <div style="font-size:.72rem;color:var(--text-3);margin-top:.2rem">{{ g.class_label }}</div>
+              {% endif %}
+            </td>
+            <td class="td-muted">{{ g.start_time[:16] if g.start_time else '—' }}</td>
+            <td class="td-muted">{{ g.end_time[:16] if g.end_time else '—' }}</td>
+            <td>
+              {% if g.active %}
+                <span class="badge badge-green">Active</span>
+              {% else %}
+                <span class="badge badge-neutral">Ended</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i data-lucide="key-round"></i>
+      <p>No grants for this student yet.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function editApp() {
+    return {
+      snapped: false,
+      snap() {
+        const feed = document.getElementById('camFeed');
+        const canvas = document.getElementById('snapCanvas');
+        canvas.width  = feed.naturalWidth  || feed.width  || 640;
+        canvas.height = feed.naturalHeight || feed.height || 480;
+        canvas.getContext('2d').drawImage(feed, 0, 0);
+        const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+        document.getElementById('snapshotData').value = dataURL;
+        document.getElementById('snapPreview').src = dataURL;
+        this.snapped = true;
+        this.$nextTick(() => lucide.createIcons());
+      },
+      clearSnap() {
+        this.snapped = false;
+        document.getElementById('snapshotData').value = '';
+      },
+      init() { lucide.createIcons(); }
+    };
+  }
+</script>
+{% endblock %}
