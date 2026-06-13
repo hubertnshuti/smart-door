@@ -45,23 +45,23 @@ class RealDoorHardware(DoorHardwareBase):
         return max(0.0, min(180.0, float(v)))
 
     def _set_angle(self, angle):
-            STEP, DELAY = 0.5, 0.01      # was 5.0, 0.15 — small steps = smooth/slow
-            angle = self._clamp(angle)
-            current = self.servo.angle
-            if current is None:
-                self.servo.angle = angle
-                time.sleep(0.5)
-                self.servo.detach()
-                return
-            current = float(current)
-            step = STEP if angle > current else -STEP
-            a = current
-            while (step > 0 and a < angle) or (step < 0 and a > angle):
-                a = min(a + step, angle) if step > 0 else max(a + step, angle)
-                self.servo.angle = self._clamp(a)
-                time.sleep(DELAY)
-            time.sleep(0.3)
-            self.servo.detach()  
+        STEP, DELAY = 0.5, 0.01      # was 5.0, 0.15 — small steps = smooth/slow
+        angle = self._clamp(angle)
+        current = self.servo.angle
+        if current is None:
+            self.servo.angle = angle
+            time.sleep(0.5)
+            self.servo.detach()
+            return
+        current = float(current)
+        step = STEP if angle > current else -STEP
+        a = current
+        while (step > 0 and a < angle) or (step < 0 and a > angle):
+            a = min(a + step, angle) if step > 0 else max(a + step, angle)
+            self.servo.angle = self._clamp(a)
+            time.sleep(DELAY)
+        time.sleep(0.3)
+        self.servo.detach()
 
     def open_door(self, auto_relock=True):
         with self._lock:
