@@ -134,6 +134,7 @@ def recognition_loop():
                     else:
                         door.alarm(seconds=1)
                         action = "Access denied — no active grant"
+                        notifier.notify_unauthorized(match["name"], reg)
                         _emit_event(match["name"], "student", "Denied", action, False, reg)
                         db.add_log(match["name"], "student", "Denied", action, reg)
             else:
