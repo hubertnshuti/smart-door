@@ -86,3 +86,13 @@ def notify_unknown(image_path=None):
     threading.Thread(target=_send_email,    args=(subject, body, image_path), daemon=True).start()
     threading.Thread(target=_send_telegram, args=(body, image_path),          daemon=True).start()
     threading.Thread(target=_send_sms,      args=(body,),                     daemon=True).start()
+
+def notify_unauthorized(name, reg=None):
+    """Alert: a known student without an active grant tried to enter."""
+    who = f"{name} ({reg})" if reg else name
+    subject = "Lab Access: Unauthorized student attempt"
+    body = (f"{who} tried to enter the lab but has no active access grant.\n\n"
+            f"Open the dashboard: {config.DASHBOARD_URL}")
+    threading.Thread(target=_send_email,    args=(subject, body, None), daemon=True).start()
+    threading.Thread(target=_send_telegram, args=(body, None),          daemon=True).start()
+    threading.Thread(target=_send_sms,      args=(body,),               daemon=True).start()
