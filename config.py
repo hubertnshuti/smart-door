@@ -40,9 +40,9 @@ DEMO_STUDENT_PASSWORD = "demo1234"
 EMAIL_ENABLED = True
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
-EMAIL_FROM     = os.environ.get("EMAIL_FROM",     "youremail@gmail.com")
-EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "your-app-password")
-EMAIL_TO       = os.environ.get("EMAIL_TO",       "youremail@gmail.com")
+EMAIL_FROM     = os.environ.get("EMAIL_FROM",     "furahadieudonnee1@gmail.com")
+EMAIL_PASSWORD = os.environ.get("EMAIL_PASSWORD", "mdia vohx ycbn mcad")
+EMAIL_TO       = os.environ.get("EMAIL_TO",       "furahadieudonnee1@gmail.com")
 
 # ---------- TELEGRAM ----------
 TELEGRAM_ENABLED = True
