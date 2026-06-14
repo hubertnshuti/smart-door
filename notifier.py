@@ -83,7 +83,7 @@ def notify_unknown(image_path=None):
     subject = "Lab Access Control: Unknown person detected!"
     body    = ("An unrecognized person attempted to access the lab. "
                "See the attached snapshot for details.\n"
-               f"Open the dashboard: {config.DASHBOARD_URL}")
+               f"Open the dashboard: {config.DASHBOARD_URL}"
               )
     threading.Thread(target=_send_email,    args=(subject, body, image_path), daemon=True).start()
     threading.Thread(target=_send_telegram, args=(body, image_path),          daemon=True).start()
