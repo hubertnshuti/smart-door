@@ -72,3 +72,5 @@ STAFF_PHOTOS_DIR    = os.path.join(BASE_DIR, "staff_photos")
 UPLOADS_DIR         = os.path.join(BASE_DIR, "uploads")
 UPLOADS_CARDS_DIR   = os.path.join(BASE_DIR, "uploads", "cards")
 UPLOADS_RECO_DIR    = os.path.join(BASE_DIR, "uploads", "reco")
+
+DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "http://dodos:5000")
