@@ -51,10 +51,10 @@ TELEGRAM_CHAT_ID   = os.environ.get("TELEGRAM_CHAT_ID",   "your-chat-id")
 
 # ---------- SMS (Infobip) ----------
 SMS_ENABLED = True
-INFOBIP_BASE_URL = os.environ.get("INFOBIP_BASE_URL", "qwelwq.api.infobip.com")
-INFOBIP_API_KEY  = os.environ.get("INFOBIP_API_KEY",  "53fd6397ff8ca9a8b449a4d1c61a5498-84c7684c-6472-4ade-aa06-5a9ce90affb4")
-SMS_SENDER = "ServiceSMS"
-SMS_TO     = os.environ.get("SMS_TO", "250780354633")
+INFOBIP_BASE_URL = os.environ.get("INFOBIP_BASE_URL", "d8ypyl.api.infobip.com")
+INFOBIP_API_KEY  = os.environ.get("INFOBIP_API_KEY", "ff5f62d200256e74a517dd7f25dd5ae3-4b1e6990-9c3b-43a5-a857-ba67c6250d42")
+SMS_SENDER = "ServiceSMS"        # required test sender during free trial
+SMS_TO = os.environ.get("SMS_TO", "250781497409")   # your verified number
 
 # ---------- GRANT DURATION PRESETS (minutes) ----------
 GRANT_DURATION_PRESETS = [30, 60, 90, 120, 180, 240]
